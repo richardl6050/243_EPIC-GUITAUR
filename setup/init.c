@@ -29,6 +29,7 @@ void av_write(int AUDIO_REG, int DATA){
     poll_ready();
 
 }
+
 void init(){
 
     //reset
@@ -46,7 +47,7 @@ void init(){
 
     av_write(POWER_DOWN, 0); //turn everything on
 
-    av_write(DA_INTERFACE_FORMAT, 0b1010);
+    av_write(DA_INTERFACE_FORMAT, 0b1110); //32 bit ON
     //sampling
     av_write(SAMPLING, 0b00000000); // 48kHz sampling rate at 12.88 MHz external clock
 
