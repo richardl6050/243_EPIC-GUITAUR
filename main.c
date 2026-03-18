@@ -41,7 +41,7 @@ int main(void) {
 
 
     //audio set up
-    // init();
+  init();
 
     volatile struct audio_base* AUDIO = (struct audio_base*) AUDIO_BASE;
 
@@ -96,13 +96,18 @@ int main(void) {
     if(AUDIO->rarc != 0 && AUDIO->ralc != 0){
         LEFT = AUDIO->ldata;
         RIGHT = AUDIO->rdata;
+
+        leds_show_strength(LEFT);
     
-        // //calls all my effects that are necessary
+        //calls all my effects that are necessary
         // for(int i = 0; i < 9; i++){
         //     if(sw & (1 << i)){
         //         effects[i](&LEFT, &RIGHT, fx_strength[i]);
         //     }
         // }
+        if((sw & 0b1) == 1){
+          mute(&LEFT, &RIGHT, fx_strength[0]);
+        }
 
         if(AUDIO->wsrc != 0 && AUDIO->wslc != 0){
             AUDIO->ldata = LEFT;
