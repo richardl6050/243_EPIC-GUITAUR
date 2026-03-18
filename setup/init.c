@@ -1,55 +1,78 @@
 #include "..\address_map.h"
+// Map each register at its correct byte offset
+#define AV_CTRL    ((volatile int*)(AV_CONFIG_BASE + 0))  // offset 0: control/go
+#define AV_STATUS  ((volatile int*)(AV_CONFIG_BASE + 4))  // offset 4: status
+#define AV_ADDR    ((volatile int*)(AV_CONFIG_BASE + 8))  // offset 8: I2C register address
+#define AV_DATA    ((volatile int*)(AV_CONFIG_BASE + 12)) // offset 12: I2C data
 
-volatile int* AV_CONFIG = (int*) AV_CONFIG_BASE; // set it by default
+//this is for WM8317 registers 7 bit address
+//I2C ADDRESS IS 0x34 , but it could be 0x00 
+//DATA IS 8 BITS
+#define RESET 0xF
+#define ACTIVE 0x9
+#define SAMPLING 0x8
+#define DA_INTERFACE_FORMAT 7
+#define POWER_DOWN 0x6
+#define DA_PATH_CONTROL 0x5
+#define AA_PATH_CONTROL 0x4
+#define R_HEADPHONE 0x3
+#define L_HEADPHONE 0x2
+#define R_LINE_IN 0x1
+#define L_LINE_IN 0x0
+
+int poll_ready();
+
+void av_write(int AUDIO_REG, int DATA){
+    *AV_CTRL = 0x00340000; //this is I2C address of WM8731
+    *AV_ADDR = AUDIO_REG; //whatever register it is mapped to
+    *AV_DATA = DATA; //data!!!
+    poll_ready();
+
+}
 void init(){
-    
-    //control register cofiguration
-    int control = 0b1; //trigger config of audio card
-    //its fine to poll it
-    
-    //7 bits for register location of audio
-    //8 bits for on board audio data register
-    int sampling_register = 0b1000;
-    //control registers are 9 bits only
-    int sampling_control = 0b000000000; //set it back to default man
-    *AV_CONFIG = control; //
-    poll_ready();
-    *(AV_CONFIG+2) = sampling_register;
-    poll_ready();
-    *(AV_CONFIG+3) = sampling_control;
-    poll_ready();
-    
-    /* 0 means , 48kHz sampling rate*/
-    int path_control_register = 0b0000100;
-    int path_control = 0b00001010;
 
-    *AV_CONFIG= control; //
-    poll_ready();
-    *(AV_CONFIG+2) = sampling_register;
-    poll_ready();
-    *(AV_CONFIG+3) = sampling_control;
-    poll_ready();
+    //reset
+    av_write(RESET, 0);
+    av_write(L_LINE_IN, 0b00001011); //documentation bro, turns on L_IN
+    av_write(R_LINE_IN, 0b00001011); //same with right, 
+    
+    //schematics say that LHPOUT AND RHPOUT ARE LINKED SO TURN THEM BOTH ON
+    av_write(L_HEADPHONE, 0b001111001); //default values
+    av_write(R_HEADPHONE, 0b001111001);
 
-    int activate_register = 0b1001;
-    int activate = 0b1;
+    //path control
+    av_write(AA_PATH_CONTROL, 0b00010000); //dacsel on, bypass off, no input leakage
+    av_write(DA_PATH_CONTROL, 0b01000); //default DA path
 
-    *AV_CONFIG = control;
-    poll_ready();
-    *(AV_CONFIG+2) = activate_register;
-    poll_ready();
-    *(AV_CONFIG+3) = activate;
-    poll_ready();
+    av_write(POWER_DOWN, 0); //turn everything on
+
+    av_write(DA_INTERFACE_FORMAT, 0b1010);
+    //sampling
+    av_write(SAMPLING, 0b00000000); // 48kHz sampling rate at 12.88 MHz external clock
+
+    av_write(ACTIVE, 1); //turn it on baby
 }
 
-void poll_ready(){
+int poll_ready(){
+    int ACK;
     while(1){
-        int status = *(AV_CONFIG_BASE+1); // poll status register
+        int status = *AV_STATUS; // poll status register
         int RDY = status & 0b10;
-        int ACK = status & 0b1;
+        ACK = status & 0b1;
 
         //wait until the
-        if(RDY){
-            break;
-        }
+       if(RDY){
+        break;
+       }
     }
+
+    if(ACK){
+        //tells us if its error
+        return 0;
+    }
+    else{
+        return 1;
+    }
+
+
 }
