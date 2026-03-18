@@ -4,9 +4,11 @@
 
 #define NUM_EFFECTS 9
 
+//function declarations
+
 void display_leds(int val);
 int keys_pressed();
-int count_switches(sw);
+int count_switches(int sw);
 int which_sw(int sw);
 void leds_show_strength(int val);
 
@@ -28,13 +30,18 @@ typedef void (*effect_function)(int*, int*, int); //all functions will accept au
 effect_function effects[NUM_EFFECTS] = {
     mute,
     distortion
-}
+};
+
+//address usage
+volatile int* KEYS = (int*) KEY_BASE;
+volatile int* SW = (int*) SW_BASE;
+volatile int* LEDS = (int*) LED_BASE;
 
 int main(void) {
 
 
     //audio set up
-    init();
+    // init();
 
     volatile struct audio_base* AUDIO = (struct audio_base*) AUDIO_BASE;
 
@@ -57,11 +64,11 @@ int main(void) {
   while (1) {
  
     //control polling
-    int sw = *SW_BASE & 0x3FF;
+    int sw = *SW & 0x3FF;
     int keys = keys_pressed();
 
     if (state == PLAYBACK) {
-        *LED_BASE = sw;
+        *LEDS = sw;
 
         if (keys == 0b1000 && count_switches(sw) == 1) {  // if we want to configure an effect
             eff_2config = which_sw(sw);
@@ -85,30 +92,29 @@ int main(void) {
     }
 
   //audio polling
-        int LEFT, RIGHT;
-        if(AUDIO->RARC != 0 && AUDIO->RALC != 0){
-            LEFT = AUDIO->ldata;
-            RIGHT = AUDIO->rdata;
-        
-            //calls all my effects that are necessary
-            for(int i = 0; i < 9; i++){
-                if(sw & (1 << i)){
-                    effects[i](&LEFT, &RIGHT);
-                }
-            }
+    int LEFT, RIGHT;
+    if(AUDIO->rarc != 0 && AUDIO->ralc != 0){
+        LEFT = AUDIO->ldata;
+        RIGHT = AUDIO->rdata;
+    
+        // //calls all my effects that are necessary
+        // for(int i = 0; i < 9; i++){
+        //     if(sw & (1 << i)){
+        //         effects[i](&LEFT, &RIGHT, fx_strength[i]);
+        //     }
+        // }
 
-            if(AUDIO->WSRC != 0 && AUDIO->WSLC != 0){
-                AUDIO->ldata = LEFT;
-                AUDIO->rdata = RIGHT;
-            }
+        if(AUDIO->wsrc != 0 && AUDIO->wslc != 0){
+            AUDIO->ldata = LEFT;
+            AUDIO->rdata = RIGHT;
         }
-    }   
-    return 0;
+    }
+  }   
+  return 0;
 }
 
-void display_leds(int val) {}
 int keys_pressed() {
-  volatile int *edge = KEY_BASE + 3;
+  volatile int *edge = KEYS + 3;
   int pressed = *edge & 0xF;  // 4 keys
   if (pressed) {
     *edge = pressed;  // reset keys
@@ -140,5 +146,5 @@ void leds_show_strength(int val) {
    * val == 10 → 0b1111111111 (all on)      */
   int mask = 0;
   for (int i = 0; i < val; i++) mask |= (1 << (9 - i));
-  *LED_BASE = mask;
+  *LEDS = mask;
 }
