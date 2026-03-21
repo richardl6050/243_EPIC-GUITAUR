@@ -2,9 +2,9 @@
 #include "effects/effects.h"
 #include "setup/init.h"
 
-#define NUM_EFFECTS 9
+#define NUM_EFFECTS 3
 
-//function declarations
+// function declarations
 
 void display_leds(int val);
 int keys_pressed();
@@ -12,39 +12,34 @@ int count_switches(int sw);
 int which_sw(int sw);
 void leds_show_strength(int val);
 
-static int fx_strength[NUM_EFFECTS] = {0}; //defines thes trength of each
+static int fx_strength[NUM_EFFECTS] = {0};  // defines thes trength of each
 int eff_2config = -1;  // which effect is being configured (1 to NUM_EFFECTS)
 
-struct audio_base{
-    volatile unsigned int control;
-    volatile unsigned char rarc;
-    volatile unsigned char ralc;
-    volatile unsigned char wsrc;
-    volatile unsigned char wslc;
-    volatile int ldata;
-    volatile int rdata;
+struct audio_base {
+  volatile unsigned int control;
+  volatile unsigned char rarc;
+  volatile unsigned char ralc;
+  volatile unsigned char wsrc;
+  volatile unsigned char wslc;
+  volatile int ldata;
+  volatile int rdata;
 };
 
-//array of functions for effects
-typedef void (*effect_function)(int*, int*, int); //all functions will accept audio and fx strength
-effect_function effects[NUM_EFFECTS] = {
-    mute,
-    distortion
-};
+// array of functions for effects
+typedef void (*effect_function)(
+    int*, int*, int);  // all functions will accept audio and fx strength
+effect_function effects[NUM_EFFECTS] = {mute, distortion, echo};
 
-//address usage
-volatile int* KEYS = (int*) KEY_BASE;
-volatile int* SW = (int*) SW_BASE;
-volatile int* LEDS = (int*) LED_BASE;
+// address usage
+volatile int* KEYS = (int*)KEY_BASE;
+volatile int* SW = (int*)SW_BASE;
+volatile int* LEDS = (int*)LED_BASE;
 
 int main(void) {
-
-
-    //audio set up
+  // audio set up
   init();
 
-    volatile struct audio_base* AUDIO = (struct audio_base*) AUDIO_BASE;
-
+  volatile struct audio_base* AUDIO = (struct audio_base*)AUDIO_BASE;
 
   // To set the strength of an effect, only the switch corresoinding to that
   // effect can be up. To configure it, press KEY3. This turns program to
@@ -62,64 +57,62 @@ int main(void) {
   State state = PLAYBACK;
 
   while (1) {
- 
-    //control polling
+    // control polling
     int sw = *SW & 0x3FF;
     int keys = keys_pressed();
 
     if (state == PLAYBACK) {
-        *LEDS = sw;
+      *LEDS = sw;
 
-        if (keys == 0b1000 && count_switches(sw) == 1) {  // if we want to configure an effect
-            eff_2config = which_sw(sw);
-            leds_show_strength(fx_strength[eff_2config]);
-            state = CONFIGURE;
-        }
+      if (keys == 0b1000 &&
+          count_switches(sw) == 1) {  // if we want to configure an effect
+        eff_2config = which_sw(sw);
+        leds_show_strength(fx_strength[eff_2config]);
+        state = CONFIGURE;
+      }
 
-    } else {                                             // state == CONFIGURE
-        if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
-            fx_strength[eff_2config] += 1; 
-            leds_show_strength(fx_strength[eff_2config]);
-        }  
-        else if (keys == 1 && fx_strength[eff_2config] > 0) {  // KEY0
-            fx_strength[eff_2config] -= 1;
-            leds_show_strength(fx_strength[eff_2config]);
-        } 
-        else if (keys == 8) {
-            eff_2config = -1;
-            state = PLAYBACK;
-        }
+    } else {  // state == CONFIGURE
+      if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
+        fx_strength[eff_2config] += 1;
+        leds_show_strength(fx_strength[eff_2config]);
+      } else if (keys == 1 && fx_strength[eff_2config] > 0) {  // KEY0
+        fx_strength[eff_2config] -= 1;
+        leds_show_strength(fx_strength[eff_2config]);
+      } else if (keys == 8) {
+        eff_2config = -1;
+        state = PLAYBACK;
+      }
     }
 
-  //audio polling
+    // audio polling
     int LEFT, RIGHT;
-    if(AUDIO->rarc != 0 && AUDIO->ralc != 0){
-        LEFT = AUDIO->ldata;
-        RIGHT = AUDIO->rdata;
+    if (AUDIO->rarc != 0 && AUDIO->ralc != 0) {
+      LEFT = AUDIO->ldata;
+      RIGHT = AUDIO->rdata;
 
-        leds_show_strength(LEFT);
-    
-        //calls all my effects that are necessary
-        // for(int i = 0; i < 9; i++){
-        //     if(sw & (1 << i)){
-        //         effects[i](&LEFT, &RIGHT, fx_strength[i]);
-        //     }
-        // }
-        if((sw & 0b1) == 1){
-          mute(&LEFT, &RIGHT, fx_strength[0]);
-        }
+      leds_show_strength(LEFT);
 
-        if(AUDIO->wsrc != 0 && AUDIO->wslc != 0){
-            AUDIO->ldata = LEFT;
-            AUDIO->rdata = RIGHT;
-        }
+      // calls all my effects that are necessary
+      //  for(int i = 0; i < 9; i++){
+      //      if(sw & (1 << i)){
+      //          effects[i](&LEFT, &RIGHT, fx_strength[i]);
+      //      }
+      //  }
+      if ((sw & 0b1) == 1) {
+        mute(&LEFT, &RIGHT, fx_strength[0]);
+      }
+
+      if (AUDIO->wsrc != 0 && AUDIO->wslc != 0) {
+        AUDIO->ldata = LEFT;
+        AUDIO->rdata = RIGHT;
+      }
     }
-  }   
+  }
   return 0;
 }
 
 int keys_pressed() {
-  volatile int *edge = KEYS + 3;
+  volatile int* edge = KEYS + 3;
   int pressed = *edge & 0xF;  // 4 keys
   if (pressed) {
     *edge = pressed;  // reset keys
