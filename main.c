@@ -27,7 +27,9 @@ struct audio_base {
 
 // array of functions for effects
 typedef void (*effect_function)(
-    int*, int*, int);  // all functions will accept audio and fx strength
+    int*, int*,
+    int);  // all functions that accept audio and fx strength parameters and
+           // returns nothing will be known as an effect_function
 effect_function effects[NUM_EFFECTS] = {mute, distortion, echo};
 
 // address usage
@@ -65,7 +67,8 @@ int main(void) {
       *LEDS = sw;
 
       if (keys == 0b1000 &&
-          count_switches(sw) == 1) {  // if we want to configure an effect
+          count_switches(sw) ==
+              1) {  // if we want to configure an effect, press KEY3
         eff_2config = which_sw(sw);
         leds_show_strength(fx_strength[eff_2config]);
         state = CONFIGURE;
@@ -75,10 +78,12 @@ int main(void) {
       if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
         fx_strength[eff_2config] += 1;
         leds_show_strength(fx_strength[eff_2config]);
-      } else if (keys == 1 && fx_strength[eff_2config] > 0) {  // KEY0
+      } else if (keys == 1 &&
+                 fx_strength[eff_2config] > 0) {  // KEY0 decrements
         fx_strength[eff_2config] -= 1;
         leds_show_strength(fx_strength[eff_2config]);
-      } else if (keys == 8) {
+      } else if (keys ==
+                 8) {  // KEY3 confirms configuration and exits to playback mode
         eff_2config = -1;
         state = PLAYBACK;
       }
@@ -93,13 +98,24 @@ int main(void) {
       leds_show_strength(LEFT);
 
       // calls all my effects that are necessary
-      //  for(int i = 0; i < 9; i++){
+      //  for(int i = 0; i < NUM_EFFECTS; i++){
       //      if(sw & (1 << i)){
       //          effects[i](&LEFT, &RIGHT, fx_strength[i]);
       //      }
       //  }
+
       if ((sw & 0b1) == 1) {
         mute(&LEFT, &RIGHT, fx_strength[0]);
+      }
+
+      if ((sw & 0b010) == 0b010) {  // SW1 = distortion
+        distortion(&LEFT, &RIGHT, fx_strength[1]);
+      }
+      if ((sw & 0b100) == 0b100) {  // SW2 = echo
+        echo(&LEFT, &RIGHT, fx_strength[2]);
+      }
+      if ((sw & 0b1000) == 0b1000) {  // SW3 = reverb
+        reverb(&LEFT, &RIGHT, fx_strength[3]);
       }
 
       if (AUDIO->wsrc != 0 && AUDIO->wslc != 0) {
@@ -110,6 +126,8 @@ int main(void) {
   }
   return 0;
 }
+
+// helper fuctions
 
 int keys_pressed() {
   volatile int* edge = KEYS + 3;

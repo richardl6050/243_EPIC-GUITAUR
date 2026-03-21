@@ -1,46 +1,47 @@
 #include "effects.h"
 
 #define SAMPLE_RATE 8000
-#define DELAY_SAMPLES 3200  // 8000 samples/sec * 0.4 seconds
-#define MAX_STRENGTH 10
+#define DELAY_PER_LEVEL \
+  1600                   // 8000 samples/sec * 0.2 seconds per strength level
+#define MAX_DELAY 16000  // 8000 samples/sec * 2.0 seconds (strength 10)
 
-// Persistent state — zeroed automatically at startup
-static int buf_left[DELAY_SAMPLES];
-static int buf_right[DELAY_SAMPLES];
+// Buffer sized for the maximum possible delay
+static int buf_left[MAX_DELAY];
+static int buf_right[MAX_DELAY];
 static int head = 0;
 
 /*
- * echo — applies a 0.4-second circular-buffer echo to *L and *R.
- *
  * strength: 0  → no echo (dry signal only)
- *           1  → quietest echo  (~10% of delayed sample)
- *           10 → loudest echo   (100% of delayed sample, i.e. >> 0)
+ *           1  → 0.2 s delay  (1600 samples)
+ *           2  → 0.4 s delay  (3200 samples)
+ *           ...
+ *           10 → 2.0 s delay  (16000 samples)
  *
- * The delayed sample is right-shifted by (MAX_STRENGTH - strength),
- * so strength 10 adds the full delayed amplitude and strength 0 adds none.
+ * Echo is mixed at half volume (>> 1) regardless of strength
  */
+
 void echo(int* L, int* R, int strength) {
-  // Retrieve the sample stored 0.4 seconds ago
+  if (strength <= 0) {
+    return;  // nothing. why did I write this? perhaps for safety?
+  }
+
+  int delay_samples = strength * DELAY_PER_LEVEL;  // 1600 to 16000
+
+  // get sample from delay_samples ago
   int delayed_left = buf_left[head];
   int delayed_right = buf_right[head];
 
-  // Overwrite that slot with the current input sample
+  // Overwrite that slot with the current input
   buf_left[head] = *L;
   buf_right[head] = *R;
 
-  // Advance head, wrapping around the circular buffer
+  // Advance head, wrapping within the current delay window
   head++;
-  if (head >= DELAY_SAMPLES) {
+  if (head >= delay_samples) {
     head = 0;
   }
 
-  // Mix: scale the echo by strength (0 = silent, 10 = full volume)
-  // Guard against strength == 0 to avoid undefined behaviour on >> 10
-  if (strength > 0) {
-    int shift = MAX_STRENGTH -
-                strength;  // strength 10 → shift 0 (full), strength 1 → shift 9
-    *L += (delayed_left >> shift);
-    *R += (delayed_right >> shift);
-  }
-  // strength == 0: output is unchanged (no echo added)
+  // Mix echo at half volume
+  *L += (delayed_left >> 1);
+  *R += (delayed_right >> 1);
 }
