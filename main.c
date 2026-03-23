@@ -2,7 +2,7 @@
 #include "effects/effects.h"
 #include "setup/init.h"
 
-#define NUM_EFFECTS 3
+#define NUM_EFFECTS 4
 
 // function declarations
 
@@ -30,7 +30,7 @@ typedef void (*effect_function)(
     int*, int*,
     int);  // all functions that accept audio and fx strength parameters and
            // returns nothing will be known as an effect_function
-effect_function effects[NUM_EFFECTS] = {mute, distortion, echo};
+effect_function effects[NUM_EFFECTS] = {mute, distortion, echo, reverb};
 
 // address usage
 volatile int* KEYS = (int*)KEY_BASE;
