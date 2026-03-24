@@ -23,8 +23,8 @@
 int poll_ready();
 
 void av_write(int AUDIO_REG, int DATA){
-    *AV_CTRL = 0x00340000; //this is I2C address of WM8731
-    *AV_ADDR = (AUDIO_REG<<1) | (DATA >> 8); //whatever register it is mapped to
+     //this is I2C address of WM8731
+    *AV_ADDR = AUDIO_REG; //whatever register it is mapped to
     *AV_DATA = DATA; //data!!!
     while(!poll_ready());
 

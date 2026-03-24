@@ -67,8 +67,7 @@ int main(void) {
       *LEDS = sw;
 
       if (keys == 0b1000 &&
-          count_switches(sw) ==
-              1) {  // if we want to configure an effect, press KEY3
+          count_switches(sw) == 1) {  // if we want to configure an effect, press KEY3
         eff_2config = which_sw(sw);
         leds_show_strength(fx_strength[eff_2config]);
         state = CONFIGURE;
@@ -91,36 +90,44 @@ int main(void) {
 
     // audio polling
     int LEFT, RIGHT;
+    int LEFTS[9] = {0};
+    int RIGHTS[9] = {0};
     if (AUDIO->rarc != 0 && AUDIO->ralc != 0) {
-      LEFT = AUDIO->ldata;
-      RIGHT = AUDIO->rdata;
+      LEFTS[0] = AUDIO->ldata;
+      RIGHTS[0] = AUDIO->rdata;
 
-      leds_show_strength(LEFT);
-
-      // calls all my effects that are necessary
-      //  for(int i = 0; i < NUM_EFFECTS; i++){
-      //      if(sw & (1 << i)){
-      //          effects[i](&LEFT, &RIGHT, fx_strength[i]);
-      //      }
-      //  }
-
-      if ((sw & 0b1) == 1) {
-        mute(&LEFT, &RIGHT, fx_strength[0]);
+      int k = 0;
+      if(sw == 1){
+        mute(LEFTS+k, RIGHTS+k, 0);
       }
 
-      if ((sw & 0b010) == 0b010) {  // SW1 = distortion
-        distortion(&LEFT, &RIGHT, fx_strength[1]);
-      }
-      if ((sw & 0b100) == 0b100) {  // SW2 = echo
-        echo(&LEFT, &RIGHT, fx_strength[2]);
-      }
-      if ((sw & 0b1000) == 0b1000) {  // SW3 = reverb
-        reverb(&LEFT, &RIGHT, fx_strength[3]);
-      }
+      k++;
+      LEFTS[k] = LEFTS[k-1];
+      RIGHTS[k] = RIGHTS[k-1];
 
-      if (AUDIO->wsrc != 0 && AUDIO->wslc != 0) {
-        AUDIO->ldata = LEFT;
-        AUDIO->rdata = RIGHT;
+      if((sw & 0b10)!=0){
+        distortion(LEFTS+k, RIGHTS+k, fx_strength[1]);
+      }
+      k++;
+      LEFTS[k] = LEFTS[k-1];
+      RIGHTS[k] = RIGHTS[k-1];
+
+      if ((sw & 0b100) != 0){
+        echo(LEFTS+k, RIGHTS+k,fx_strength[2]);
+      }
+      k++;
+      LEFTS[k] = LEFTS[k-1];
+      RIGHTS[k] = RIGHTS[k-1];
+      if((sw&0b1000) != 0){
+        reverb(LEFTS+k, RIGHTS+k, fx_strength[3]);
+      }
+      k++;
+      LEFTS[k] = LEFTS[k-1];
+      RIGHTS[k] = RIGHTS[k-1];
+
+      if(AUDIO->wsrc != 0 && AUDIO->wslc !=0){
+        AUDIO->ldata = LEFTS[k];
+        AUDIO->rdata = RIGHTS[k];
       }
     }
   }

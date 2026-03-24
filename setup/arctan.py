@@ -2,7 +2,7 @@ import numpy as np
 
 # Configuration
 LUT_SIZE = 256          # 8-bit index from your MSB
-BIT_DEPTH = 24          # Target signal depth
+BIT_DEPTH = 23          # Target signal depth
 MAX_VAL = (2**23) - 1   # Max positive value for 24-bit signed
 
 def generate_tanh_lut(size):
