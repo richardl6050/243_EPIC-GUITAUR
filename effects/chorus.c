@@ -18,17 +18,17 @@ struct Chorus{
 static Chorus c = {
     .write_ptr = 0;
     .phase_1 = 0,
-    .phase_2 = 86, //plug offset here //120 degree offset
-}
+    .phase_2 = 86 //plug offset here //120 degree offset
+};
 
 //parameter summary
 // 
-1. chorus rate --> how fast we update our phase accumulator LFO!!!
-2. chorus depth --> how much we swing
-3. base delay --> center of our swing
-*/
+// 1. chorus rate --> how fast we update our phase accumulator LFO!!!
+// 2. chorus depth --> how much we swing
+// 3. base delay --> center of our swing
 
-static const int16_t sine_lut[256] = {
+
+static const int sine_lut[256] = {
     0, // [  0] 0.0deg
     804, // [  1] 1.4deg
     1608, // [  2] 2.8deg
@@ -291,7 +291,7 @@ static const int chorus_rate[10] = {
     //ranging from 1 to 10hz
     //formula is nSamples = sampling rate / desired
     187, 94, 63, 47, 38, 31, 27, 23, 21, 19
-}
+};
 
 static const int chorus_depth[10] = {
     //q15 numbers
@@ -304,8 +304,8 @@ static const int chorus_depth[10] = {
     0x599A,  /* [6] 0.7000 -> 22938 */
     0x6666,  /* [7] 0.8000 -> 26214 */
     0x7333,  /* [8] 0.9000 -> 29491 */
-    0x7FFF,  /* [9] 1.0000 -> 32767 */
-}
+    0x7FFF  /* [9] 1.0000 -> 32767 */
+};
 
 const int base_delay[10] = {
     //constant for now

@@ -2,8 +2,8 @@ import numpy as np
 
 # Configuration
 LUT_SIZE = 256          # 8-bit index from upper bits of magnitude
-FRAC_BITS = 15          # Remaining bits used for interpolation (bits 14..0)
-MAG_BITS = 23           # Magnitude bits (24-bit signed, sign excluded)
+FRAC_BITS = 23         # Remaining bits used for interpolation (bits 14..0)
+MAG_BITS = 31           # Magnitude bits (24-bit signed, sign excluded)
 INDEX_BITS = 8          # MSBs used for LUT index
 MAX_VAL = (1 << MAG_BITS) - 1   # 0x7FFFFF
 

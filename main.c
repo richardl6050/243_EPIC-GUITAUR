@@ -124,6 +124,13 @@ int main(void) {
       k++;
       LEFTS[k] = LEFTS[k-1];
       RIGHTS[k] = RIGHTS[k-1];
+      if((sw&0b10000) != 0){
+        chorus(LEFTS+k, RIGHTS+k, fx_strength[3]);
+      }
+      
+      k++;
+      LEFTS[k] = LEFTS[k-1];
+      RIGHTS[k] = RIGHTS[k-1];
 
       if(AUDIO->wsrc != 0 && AUDIO->wslc !=0){
         AUDIO->ldata = LEFTS[k];
