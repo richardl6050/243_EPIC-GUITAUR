@@ -4,6 +4,8 @@
 
 static int circ_buffer[DELAY_SIZE] = {0};
 
+static int count = 0;
+
 struct Chorus{
     int write_ptr;
     int read_ptr1;
@@ -26,7 +28,7 @@ static Chorus c = {
 3. base delay --> center of our swing
 */
 
-const int16_t sine_lut[256] = {
+static const int16_t sine_lut[256] = {
     0, // [  0] 0.0deg
     804, // [  1] 1.4deg
     1608, // [  2] 2.8deg
@@ -285,16 +287,29 @@ const int16_t sine_lut[256] = {
     -804, // [255] 358.6deg
 };
 
-const int chorus_rate[10] = {
-    //samples
+static const int chorus_rate[10] = {
+    //ranging from 1 to 10hz
+    //formula is nSamples = sampling rate / desired
+    187, 94, 63, 47, 38, 31, 27, 23, 21, 19
 }
 
-const int chorus_depth[10] = {
-
+static const int chorus_depth[10] = {
+    //q15 numbers
+    0x0CCD,  /* [0] 0.1000 ->  3277 */
+    0x199A,  /* [1] 0.2000 ->  6554 */
+    0x2666,  /* [2] 0.3000 ->  9830 */
+    0x3333,  /* [3] 0.4000 -> 13107 */
+    0x4000,  /* [4] 0.5000 -> 16384 */
+    0x4CCD,  /* [5] 0.6000 -> 19661 */
+    0x599A,  /* [6] 0.7000 -> 22938 */
+    0x6666,  /* [7] 0.8000 -> 26214 */
+    0x7333,  /* [8] 0.9000 -> 29491 */
+    0x7FFF,  /* [9] 1.0000 -> 32767 */
 }
 
 const int base_delay[10] = {
-
+    //constant for now
+    200, 200, 200, 200, 200, 200, 200, 200, 200, 200;
 }
 
 void chorus(int *L, int *R, int effectStrength){
@@ -308,16 +323,20 @@ void chorus(int *L, int *R, int effectStrength){
     int dry = *L;
     circ_buffer[c.write_ptr] = dry;
 
-    //increment phase acc
-    c.phase_1 += rate; //how many steps along LFO
-    c.phase_1 = c.phase_1 & 0xFF;
-    c.phase_2 += rate;
-    c.phase_2 = c.phase_2 & 0xFF;
+    //increment phase acc every n steps
+    count++;
+    if(count >= rate){
+        count = 0;
+        c.phase_1++; //how many steps along LFO
+        c.phase_1 = c.phase_1 & 0xFF;
+        c.phase_2++;
+        c.phase_2 = c.phase_2 & 0xFF;
+    }
 
     int lfo1 = sine_lut[c.phase_1]; //returns a sine value
     int lfo2 = sine_lut[c.phase_2];
 
-    int delay1 = delay + ((lfo1*depth >> 15)); //our lfo1 returns values up to 2^16
+    int delay1 = delay + ((lfo1*depth) >> 15); //our lfo1 returns values up to 2^16
     int delay2 = delay + ((lfo2*depth) >> 15); //depth is our amplitude how much it swings
 
     c.read_ptr1 = (c.write_ptr-delay1) & (DELAY_SIZE-1);
