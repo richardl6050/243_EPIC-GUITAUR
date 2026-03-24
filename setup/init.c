@@ -33,21 +33,21 @@ void av_write(int AUDIO_REG, int DATA){
 void init(){
 
     //reset
-    av_write(RESET, 0);
-    av_write(L_LINE_IN, 0b00001011); //documentation bro, turns on L_IN
-    av_write(R_LINE_IN, 0b00001011); //same with right, 
+    // av_write(RESET, 0);
+    // av_write(L_LINE_IN, 0b00001011); //documentation bro, turns on L_IN
+    // av_write(R_LINE_IN, 0b00001011); //same with right, 
     
-    //schematics say that LHPOUT AND RHPOUT ARE LINKED SO TURN THEM BOTH ON
-    av_write(L_HEADPHONE, 0b001111001); //default values
-    av_write(R_HEADPHONE, 0b001111001);
+    // //schematics say that LHPOUT AND RHPOUT ARE LINKED SO TURN THEM BOTH ON
+    // av_write(L_HEADPHONE, 0b001111001); //default values
+    // av_write(R_HEADPHONE, 0b001111001);
 
     //path control
     av_write(AA_PATH_CONTROL, 0b00010000); //dacsel on, bypass on, no input leakage
-    av_write(DA_PATH_CONTROL, 0b01000); //default DA path
+    // av_write(DA_PATH_CONTROL, 0b01000); //default DA path
 
-    av_write(POWER_DOWN, 0); //turn everything on
+    // av_write(POWER_DOWN, 0); //turn everything on
 
-    av_write(DA_INTERFACE_FORMAT, 0b1010); //32 bit ON
+    // av_write(DA_INTERFACE_FORMAT, 0b1010); //32 bit ON
     //sampling
     av_write(SAMPLING, 0b00000000); // 48kHz sampling rate at 12.88 MHz external clock
 
