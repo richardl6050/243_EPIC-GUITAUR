@@ -2,19 +2,19 @@
 
 #include "effects.h"
 
-#define SAMPLE_RATE 8000
+#define SAMPLE_RATE 48000
 #define MAX_STRENGTH 10
 
 // Comb filter delay lengths (in samples) chosen to be mutually prime to avoid
 // resonance buildup
-#define COMB1_LEN 1103  // ~138ms
-#define COMB2_LEN 1327  // ~166ms
-#define COMB3_LEN 1559  // ~195ms
-#define COMB4_LEN 1699  // ~212ms
+#define COMB1_LEN 6618   // ~138ms
+#define COMB2_LEN 7962   // ~166ms
+#define COMB3_LEN 9354   // ~195ms
+#define COMB4_LEN 10194  // ~212ms
 
 // Allpass delay lengths
-#define AP1_LEN 347  // ~43ms
-#define AP2_LEN 113  // ~14ms
+#define AP1_LEN 2082  // ~43ms
+#define AP2_LEN 678   // ~14ms
 
 // comb filter buffers
 static int comb1_L[COMB1_LEN], comb1_R[COMB1_LEN];

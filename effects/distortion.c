@@ -6,7 +6,7 @@
 // Index = bits[22:15] of 24-bit signed magnitude
 // Sign is applied separately; interpolate with bits[14:0] for smoothness
 
-//source is setup/tanh.py
+// source is setup/tanh.py
 const static int tanh_lut[256] = {
     0x0000000,  // [  0] x=0.0000
     0x201F737,  // [  1] x=0.0157
@@ -270,36 +270,42 @@ const static int tanh_lut[256] = {
 
 //q15 floats
 const int32_t drive_levels[10] = {
-    0x8000, 0xA14A, 0xCB30, 0x10000,
-    0x1428A, 0x19660, 0x20000, 0x28514, 0x32CC0, 0x40000,
+    0x8000,  0xA14A,  0xCB30,  0x10000, 0x1428A,
+    0x19660, 0x20000, 0x28514, 0x32CC0, 0x40000,
 };
 
+void distortion(int *L, int *R, int effectStrength) {
+  // interpret 24 bit data
+  // given 24 bit data, clip it following a tanh curve
+  // implement this using a look up table
 
-void distortion(int *L, int *R, int effectStrength){
-    //interpret 24 bit data
-    //given 24 bit data, clip it following a tanh curve
-    //implement this using a look up table
+  // consider 10 levels, a higher effect strength will clip more aggresively
 
-    //consider 10 levels, a higher effect strength will clip more aggresively 
+  // arctan clipping, the upper bits of the signal will determine the x-input
+  // into arctan
 
-    //arctan clipping, the upper bits of the signal will determine the x-input into arctan
+  // the higher the effect strength, we multiply the index coefficient by
+  // effectStrength
 
-    //the higher the effect strength, we multiply the index coefficient by effectStrength
+  // final approach:
+  /*
+  1. develop a 256 entry LUT for bits 16-23 - sign extend after clipping
 
-    //final approach: 
-    /*
-    1. develop a 256 entry LUT for bits 16-23 - sign extend after clipping
+  2. Upper MSB will be adjusted by a factor based on "effectStrength"
 
-    2. Upper MSB will be adjusted by a factor based on "effectStrength"
+  3. The bits 16-23 will index the LUT
 
-    3. The bits 16-23 will index the LUT
+  4. Take into account the sign of the signal
 
-    4. Take into account the sign of the signal
+  //note this will sound like shit due to undersampling, desired sampling freq
+  is at least 48k ideally 96k
 
-    //note this will sound like shit due to undersampling, desired sampling freq is at least 48k ideally 96k
+  */
 
-    */
+  // just use mono processing
+  int drive = drive_levels[effectStrength];
 
+<<<<<<< HEAD
     //just use mono processing
     if(signal < 0xFFFF){
         return;
@@ -322,7 +328,24 @@ void distortion(int *L, int *R, int effectStrength){
 
     *L = signal;
     *R = signal;
+=======
+  int signal = *L;
 
+  int sign = (signal < 0) ? -1 : 1;
+  int abs_value = (signal < 0) ? -signal : signal;  // mask
+>>>>>>> ee7056f3760446835636c10a558ca76ec64e6ab5
 
+  long long scaled = ((long)abs_value * drive) >> 15;  // scaled signal
+  if (scaled > 0x7FFFFF) {
+    scaled = 0x7FFFFF;  // clamping
+  }
 
+  int index = scaled >> 15;  // shift the bits
+  index = index & 0xFF;      // only take the upper 8 bits
+  signal = tanh_lut[index];  // indexed by upper 8 bits
+  // sign extend
+  signal *= sign;
+
+  *L = signal;
+  *R = signal;
 }

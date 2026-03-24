@@ -1,9 +1,9 @@
 #include "effects.h"
 
-#define SAMPLE_RATE 8000
+#define SAMPLE_RATE 48000
 #define DELAY_PER_LEVEL \
-  1600                   // 8000 samples/sec * 0.2 seconds per strength level
-#define MAX_DELAY 16000  // 8000 samples/sec * 2.0 seconds (strength 10)
+  9600                   // 48000 samples/sec * 0.2 seconds per strength level
+#define MAX_DELAY 96000  // 8000 samples/sec * 2.0 seconds (strength 10)
 
 // Buffer sized for the maximum possible delay
 static int buf_left[MAX_DELAY];

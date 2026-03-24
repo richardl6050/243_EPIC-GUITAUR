@@ -1,18 +1,18 @@
 #include effects.h
 
-#define DELAY_SIZE 2048 //42.6 ms of info
+#define DELAY_SIZE 2048  // 42.6 ms of info
 
 static int circ_buffer[DELAY_SIZE] = {0};
 
 static int count = 0;
 
-struct Chorus{
-    int write_ptr;
-    int read_ptr1;
-    int read_ptr2;
-    
-    int phase_1;
-    int phase_2;
+struct Chorus {
+  int write_ptr;
+  int read_ptr1;
+  int read_ptr2;
+
+  int phase_1;
+  int phase_2;
 };
 
 static Chorus c = {
@@ -308,51 +308,54 @@ static const int chorus_depth[10] = {
 };
 
 const int base_delay[10] = {
-    //constant for now
+    // constant for now
     200, 200, 200, 200, 200, 200, 200, 200, 200, 200;
 }
 
-void chorus(int *L, int *R, int effectStrength){
-    int rate = chorus_rate[effectStrength];
-    int depth = chorus_depth[effectStrength];
-    int delay = base_delay[effectStrength];
+void chorus(int *L, int *R, int effectStrength) {
+  int rate = chorus_rate[effectStrength];
+  int depth = chorus_depth[effectStrength];
+  int delay = base_delay[effectStrength];
 
-    //ran at every sample
+  // ran at every sample
 
-    //write new data to buffer
-    int dry = *L;
-    circ_buffer[c.write_ptr] = dry;
+  // write new data to buffer
+  int dry = *L;
+  circ_buffer[c.write_ptr] = dry;
 
-    //increment phase acc every n steps
-    count++;
-    if(count >= rate){
-        count = 0;
-        c.phase_1++; //how many steps along LFO
-        c.phase_1 = c.phase_1 & 0xFF;
-        c.phase_2++;
-        c.phase_2 = c.phase_2 & 0xFF;
-    }
+  // increment phase acc every n steps
+  count++;
+  if (count >= rate) {
+    count = 0;
+    c.phase_1++;  // how many steps along LFO
+    c.phase_1 = c.phase_1 & 0xFF;
+    c.phase_2++;
+    c.phase_2 = c.phase_2 & 0xFF;
+  }
 
-    int lfo1 = sine_lut[c.phase_1]; //returns a sine value
-    int lfo2 = sine_lut[c.phase_2];
+  int lfo1 = sine_lut[c.phase_1];  // returns a sine value
+  int lfo2 = sine_lut[c.phase_2];
 
-    int delay1 = delay + ((lfo1*depth) >> 15); //our lfo1 returns values up to 2^16
-    int delay2 = delay + ((lfo2*depth) >> 15); //depth is our amplitude how much it swings
+  int delay1 =
+      delay + ((lfo1 * depth) >> 15);  // our lfo1 returns values up to 2^16
+  int delay2 = delay + ((lfo2 * depth) >>
+                        15);  // depth is our amplitude how much it swings
 
-    c.read_ptr1 = (c.write_ptr-delay1) & (DELAY_SIZE-1);
-    c.read_ptr2 = (c.write_ptr-delay2) & (DELAY_SIZE-1); //masking ensures clamping
+  c.read_ptr1 = (c.write_ptr - delay1) & (DELAY_SIZE - 1);
+  c.read_ptr2 =
+      (c.write_ptr - delay2) & (DELAY_SIZE - 1);  // masking ensures clamping
 
-    int wet1 = circ_buffer[c.read_ptr1];
-    int wet2 = circ_buffer[c.read_ptr2];
+  int wet1 = circ_buffer[c.read_ptr1];
+  int wet2 = circ_buffer[c.read_ptr2];
 
-    //mixing
-    int mix = (dry>>1) + (wet1 >> 2) + (wet2 >> 2);
+  // mixing
+  int mix = (dry >> 1) + (wet1 >> 2) + (wet2 >> 2);
 
-    //increment ptrs
-    c.write_ptr += 1;
+  // increment ptrs
+  c.write_ptr += 1;
 
-    c.write_ptr = (c.write_ptr & (DELAY_SIZE-1)); //mask for cicular
+  c.write_ptr = (c.write_ptr & (DELAY_SIZE - 1));  // mask for cicular
 
-    *L = mix;
-    *R = mix;
+  *L = mix;
+  *R = mix;
 }
