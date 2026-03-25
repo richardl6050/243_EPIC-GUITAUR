@@ -269,7 +269,7 @@ const static int tanh_lut[256] = {
 
 
 //q15 floats
-const int32_t drive_levels[10] = {
+const int drive_levels[10] = {
     0x8000,  0xA14A,  0xCB30,  0x10000, 0x1428A,
     0x19660, 0x20000, 0x28514, 0x32CC0, 0x40000,
 };
@@ -307,13 +307,13 @@ void distortion(int *L, int *R, int effectStrength) {
   // just use mono processing
   int drive = drive_levels[effectStrength];
 
+  int signal = *L;
     //just use mono processing
     if(signal < 0xFFFF){
         return;
     }
-    int drive = drive_levels[effectStrength];
 
-    int signal = *L;
+
 
     int sign = (signal < 0) ? -1 : 1;
     int abs_value = (signal < 0) ? -signal : signal; //mask

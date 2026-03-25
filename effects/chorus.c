@@ -1,4 +1,4 @@
-#include effects.h
+#include "effects.h"
 
 #define DELAY_SIZE 2048  // 42.6 ms of info
 
@@ -15,8 +15,8 @@ struct Chorus {
   int phase_2;
 };
 
-static Chorus c = {
-    .write_ptr = 0;
+static struct Chorus c = {
+    .write_ptr = 0,
     .phase_1 = 0,
     .phase_2 = 86 //plug offset here //120 degree offset
 };
@@ -284,7 +284,7 @@ static const int sine_lut[256] = {
     -3212, // [252] 354.4deg
     -2410, // [253] 355.8deg
     -1608, // [254] 357.2deg
-    -804, // [255] 358.6deg
+    -804 // [255] 358.6deg
 };
 
 static const int chorus_rate[10] = {
@@ -310,7 +310,7 @@ static const int chorus_depth[10] = {
 const int base_delay[10] = {
     // constant for now
     30, 50, 70, 90, 110, 110, 110, 110, 110, 100
-}
+};
 
 void chorus(int *L, int *R, int effectStrength) {
   int rate = chorus_rate[effectStrength];
