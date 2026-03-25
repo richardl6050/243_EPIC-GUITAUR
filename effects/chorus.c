@@ -309,7 +309,7 @@ static const int chorus_depth[10] = {
 
 const int base_delay[10] = {
     // constant for now
-    200, 200, 200, 200, 200, 200, 200, 200, 200, 200;
+    30, 50, 70, 90, 110, 110, 110, 110, 110, 100
 }
 
 void chorus(int *L, int *R, int effectStrength) {
@@ -349,7 +349,7 @@ void chorus(int *L, int *R, int effectStrength) {
   int wet2 = circ_buffer[c.read_ptr2];
 
   // mixing
-  int mix = (dry >> 1) + (wet1 >> 2) + (wet2 >> 2);
+  int mix = (dry >> 2) + (wet1 >> 3) + (wet2 >> 3);
 
   // increment ptrs
   c.write_ptr += 1;
