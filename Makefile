@@ -39,9 +39,9 @@ RM	:= /usr/bin/rm -f
 
 # Flags
 USERCCFLAGS	:= -g -O1 -ffunction-sections -fverbose-asm -fno-inline -gdwarf-2 
-USERLDFLAGS	:= -Wl,--defsym=__stack_pointer$$=0x4000000 -Wl,--defsym  -Wl,JTAG_UART_BASE=0xff201000 -lm
-ARCHCCFLAGS	:= -march=rv32im_zicsr -mabi=ilp32
-ARCHLDFLAGS	:= -march=rv32im_zicsr -mabi=ilp32
+USERLDFLAGS	:= -Wl,--defsym=__stack_pointer$$=0x4000000 -Wl,--defsym  -Wl,JTAG_UART_BASE=0xff201000
+ARCHCCFLAGS	:= -march=rv32imf_zicsr -mabi=ilp32f
+ARCHLDFLAGS	:= -march=rv32imf_zicsr -mabi=ilp32f
 CCFLAGS		:= -Wall -c $(USERCCFLAGS) $(ARCHCCFLAGS)
 LDFLAGS		:= $(USERLDFLAGS) $(ARCHLDFLAGS)
 
@@ -90,7 +90,7 @@ $(basename $(MAIN)).elf: $(OBJS)
 	$(DEF_TEXT)
 	@echo $(LDFLAGS) $(OBJS) -o $@
 	@$(BASH) 'printf "\n"'
-	@$(BASH) 'cd "$(CURDIR)"; $(CYGWIN_PATH); $(LD) $(LDFLAGS) $(OBJS) -o $@'
+	@$(BASH) 'cd "$(CURDIR)"; $(CYGWIN_PATH); $(LD) $(LDFLAGS) $(OBJS) -lm -o $@'
 
 %.c.o: %.c $(HDRS)
 	@$(BASH) 'cd "$(CURDIR)"; $(RM) $@'
