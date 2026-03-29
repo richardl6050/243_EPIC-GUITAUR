@@ -2,7 +2,7 @@
 #include "effects/effects.h"
 #include "setup/init.h"
 
-#define NUM_EFFECTS 4
+#define NUM_EFFECTS 6
 
 // function declarations
 
@@ -26,16 +26,13 @@ struct audio_base {
 };
 
 // array of functions for effects
-typedef void (*effect_function)(
-    int*, int*,
-    int);  // all functions that accept audio and fx strength parameters and
-           // returns nothing will be known as an effect_function
-effect_function effects[NUM_EFFECTS] = {mute, distortion, echo, reverb};
 
 // address usage
 volatile int* KEYS = (int*)KEY_BASE;
 volatile int* SW = (int*)SW_BASE;
 volatile int* LEDS = (int*)LED_BASE;
+
+static int* LEFT, RIGHT;
 
 int main(void) {
   // audio set up
@@ -63,6 +60,7 @@ int main(void) {
     int sw = *SW & 0x3FF;
     int keys = keys_pressed();
 
+    //UI STATE MACHINE
     if (state == PLAYBACK) {
       *LEDS = sw;
 
@@ -72,6 +70,8 @@ int main(void) {
         leds_show_strength(fx_strength[eff_2config]);
         state = CONFIGURE;
       }
+    
+
 
     } else {  // state == CONFIGURE
       if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
@@ -88,53 +88,24 @@ int main(void) {
       }
     }
 
-    // audio polling
-    int LEFT, RIGHT;
-    int LEFTS[9] = {0};
-    int RIGHTS[9] = {0};
+    
+    //SIGNAL CHAIN
+
     if (AUDIO->rarc != 0 && AUDIO->ralc != 0) {
-      LEFTS[0] = AUDIO->ldata;
-      RIGHTS[0] = AUDIO->rdata;
+      *LEFT = AUDIO->ldata;
+      *RIGHT = AUDIO->rdata;
 
-      int k = 0;
-      if(sw == 1){
-        mute(LEFTS+k, RIGHTS+k, 0);
-      }
-
-      k++;
-      LEFTS[k] = LEFTS[k-1];
-      RIGHTS[k] = RIGHTS[k-1];
-
-      if((sw & 0b10)!=0){
-        distortion(LEFTS+k, RIGHTS+k, fx_strength[1]);
-      }
-      k++;
-      LEFTS[k] = LEFTS[k-1];
-      RIGHTS[k] = RIGHTS[k-1];
-
-      if ((sw & 0b100) != 0){
-        echo(LEFTS+k, RIGHTS+k,fx_strength[2]);
-      }
-      k++;
-      LEFTS[k] = LEFTS[k-1];
-      RIGHTS[k] = RIGHTS[k-1];
-      if((sw&0b1000) != 0){
-        reverb(LEFTS+k, RIGHTS+k, fx_strength[3]);
-      }
-      k++;
-      LEFTS[k] = LEFTS[k-1];
-      RIGHTS[k] = RIGHTS[k-1];
-      if((sw&0b10000) != 0){
-        chorus(LEFTS+k, RIGHTS+k, fx_strength[3]);
-      }
+      if(sw == 1) mute(LEFT, RIGHT, 0);
+      if((sw & 0b10)!=0) wah(LEFT, RIGHT, fx_strength[1]);
+      if ((sw & 0b100) != 0) distortion(LEFTS+k, RIGHTS+k,fx_strength[2]);
+      if((sw&0b1000) != 0) chorus(LEFTS+k, RIGHTS+k, fx_strength[3]);
+      if((sw&0b10000) != 0) vibrato(LEFT, RIGHT, fx_strength[4]);
+      if((sw&0b100000) != 0) delay(LEFT, RIGHT, fx_strength[5]);
+      if((sw&0b1000000) != 0) reverb(LEFTS+k, RIGHTS+k, fx_strength[6]);
       
-      k++;
-      LEFTS[k] = LEFTS[k-1];
-      RIGHTS[k] = RIGHTS[k-1];
-
       if(AUDIO->wsrc != 0 && AUDIO->wslc !=0){
-        AUDIO->ldata = LEFTS[k];
-        AUDIO->rdata = RIGHTS[k];
+        AUDIO->ldata = *LEFT;
+        AUDIO->rdata = *RIGHT;
       }
     }
   }

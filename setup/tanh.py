@@ -2,8 +2,7 @@ import numpy as np
 
 # Configuration
 LUT_SIZE = 256          # 8-bit index from upper bits of magnitude
-FRAC_BITS = 20         # Remaining bits used for interpolation (bits 14..0)
-MAG_BITS = 28           # Magnitude bits (24-bit signed, sign excluded)
+MAG_BITS = 23           # Magnitude bits (24-bit signed, sign excluded)
 INDEX_BITS = 8          # MSBs used for LUT index
 MAX_VAL = (1 << MAG_BITS) - 1   # 0x7FFFFF
 
@@ -13,7 +12,7 @@ MAX_VAL = (1 << MAG_BITS) - 1   # 0x7FFFFF
 # You need to decide: what input value does index 255 correspond to?
 # Here we map index 255 -> x=4.0 (tanh(4) ≈ 0.9993, effectively clipped).
 # Adjust DRIVE_MAX to taste.
-DRIVE_MAX = 10
+DRIVE_MAX = 3
 
 
 def generate_tanh_lut(size, drive_max, use_atan=False):
