@@ -2,7 +2,7 @@
 #include "effects/effects.h"
 #include "setup/init.h"
 
-#define NUM_EFFECTS 6
+#define NUM_EFFECTS 7
 
 // function declarations
 
@@ -56,9 +56,9 @@ int main(void) {
   // That puts program back in playback mode, where effects can be turned on or
   // off using the switches.
 
-  typedef enum { PLAYBACK, CONFIGURE, LOOP, RECORDING, PLAY, PAUSE, CLEAR, OVERDUB} State;
+  typedef enum { PLAYBACK, CONFIGURE, LOOP, RECORDING, PLAY, PAUSED, CLEAR, OVERDUB, IDLE} State;
   State state = PLAYBACK;
-  State looper_state;
+  State looper_state = IDLE;
 
   while (1) {
     // control polling
@@ -75,6 +75,9 @@ int main(void) {
         }
         if((sw & 0b1000000000) != 0){
             looper_state = LOOP;
+        }
+        else if((sw & 0b1000000000) == 0){
+            looper_state = IDLE;
         }
 
     } else {  // state == CONFIGURE
@@ -94,35 +97,56 @@ int main(void) {
 
     
     //FSMSSSS
-    if(looper_state == LOOP && state != CONFIGURE){
-        if(keys == 0b100){
-            looper_state = RECORDING;
-            //start writing to buffer
+    if(state != CONFIGURE){
+        if(looper_state == LOOP){
+        //start recording
+            if(keys == 0b100){
+                LOOP_WRITER = 0;
+                looper_state = RECORDING;
+            }
         }
-        if(keys == 0b100 && state == RECORDING){
-            //stop recording save the array length here 
-            looper_state = PLAY;
+        else if(looper_state == RECORDING){
+            if(keys == 0b100 || LOOP_WRITER >= LOOP_END){
+                //stop recording
+                LOOP_END = LOOP_WRITER;
+                LOOP_READER = 0;
+                looper_state = PLAY;
+            }
         }
-        if(looper_state == PLAY){
+        else if(looper_state == PLAY){
             if(keys == 0b10){
-                looper_state == PAUSED;
+                looper_state = PAUSED;
                 //pause it
             }
             if(keys == 0b1){
-                looper_state == CLEAR;
+                looper_state = CLEAR;
                 //clear it
             }
-            if(keys = 0b100){
-                looper_state == OVERDUB;
+            if(keys == 0b100){
+                LOOP_WRITER = LOOP_READER;
+                looper_state = OVERDUB;
                 //start recording new stuff and overwrite the buffer with the write ptr going back
             }
         }
-
-        if(keys == 0b100 && state == OVERDUB){
-            looper_state = PLAY;
+        else if(looper_state == OVERDUB){
+            if(keys == 0b100 || LOOP_WRITER >= LOOP_END){
+                looper_state = PLAY;
+            }
         }
-
+        else if(looper_state == PAUSED){
+            if(keys == 0b10){
+                looper_state = PLAY;
+            }
+        }
+        else if(looper_state == CLEAR){
+            looper_state = LOOP;
+        }
     }
+    
+
+
+
+    
 
     
     //SIGNAL CHAIN
@@ -143,21 +167,44 @@ int main(void) {
 
         //fsms here
         if(looper_state == RECORDING){
-            //start write ptr at 0, start recording
+            LOOP_BUFFER[LOOP_WRITER] = *LEFT
+            LOOP_WRITER++;
         }
         else if(looper_state == PLAY){
             //add the array output to the throughput 
+            if(LOOP_READER <= LOOP_END){
+                *LEFT = (*LEFT >> 1) + (LOOP_BUFFER[LOOP_READER] >> 1)
+                LOOP_READER++;
+            }
+            else{
+                LOOP_READER = 0;
+            }
         }
-        else if(looper_state == PAUSE){
-            //stop playing, reset read ptr to 0 
+        else if(looper_state == PAUSED){
+
         }
         else if(looper_state == CLEAR){
-            //GONE
+            LOOP_READER = 0;
+            LOOP_WRITER = 0;
+            for(int i = 0 ; i < 4194304; i++){
+                LOOP_BUFFER[i] = 0;
+            }
         }
         else if(looper_state == OVERDUB){
             //obtain the output
             //overwrite the array at index 0
+            int TEMP = (*LEFT >> 1) + (LOOP_BUFFER[LOOP_READER] >> 1);
+            *LEFT = TEMP;
+            LOOP_BUFFER[LOOP_WRITER] = TEMP;
+            LOOP_READER++;
+            LOOP_WRITER++;
         }
+
+        if(AUDIO->wsrc != 0 && AUDIO->wslc != 0){
+            AUDIO->ldata = *LEFT;
+            AUDIO->rdata = *LEFT; 
+
+        }   
     }
   }
   return 0;
