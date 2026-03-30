@@ -35,6 +35,9 @@ volatile int* LEDS = (int*)LED_BASE;
 static int* LEFT;
 static int* RIGHT;
 
+static int LOOP_BUFFER[4194304] = {0};
+static int LOOP_WRITER, LOOP_READER, LOOP_END;
+
 int main(void) {
   // audio set up
   init();
@@ -53,8 +56,9 @@ int main(void) {
   // That puts program back in playback mode, where effects can be turned on or
   // off using the switches.
 
-  typedef enum { PLAYBACK, CONFIGURE } State;
+  typedef enum { PLAYBACK, CONFIGURE, LOOP, RECORDING, PLAY, PAUSE, CLEAR, OVERDUB} State;
   State state = PLAYBACK;
+  State looper_state;
 
   while (1) {
     // control polling
@@ -63,51 +67,97 @@ int main(void) {
 
     //UI STATE MACHINE
     if (state == PLAYBACK) {
-      *LEDS = sw;
-
-      if (keys == 0b1000 &&
-          count_switches(sw) == 1) {  // if we want to configure an effect, press KEY3
-        eff_2config = which_sw(sw);
-        leds_show_strength(fx_strength[eff_2config]);
-        state = CONFIGURE;
-      }
-    
-
+        *LEDS = sw;
+        if (keys == 0b1000 && count_switches(sw) == 1) {  // if we want to configure an effect, press KEY3
+            eff_2config = which_sw(sw);
+            leds_show_strength(fx_strength[eff_2config]);
+            state = CONFIGURE;
+        }
+        if((sw & 0b1000000000) != 0){
+            looper_state = LOOP;
+        }
 
     } else {  // state == CONFIGURE
-      if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
-        fx_strength[eff_2config] += 1;
-        leds_show_strength(fx_strength[eff_2config]);
-      } else if (keys == 1 &&
+        if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
+            fx_strength[eff_2config] += 1;
+            leds_show_strength(fx_strength[eff_2config]);
+    } else if (keys == 1 &&
                  fx_strength[eff_2config] > 0) {  // KEY0 decrements
-        fx_strength[eff_2config] -= 1;
+                    fx_strength[eff_2config] -= 1;
         leds_show_strength(fx_strength[eff_2config]);
       } else if (keys ==
                  8) {  // KEY3 confirms configuration and exits to playback mode
         eff_2config = -1;
         state = PLAYBACK;
-      }
+    }
+}
+
+    
+    //FSMSSSS
+    if(looper_state == LOOP && state != CONFIGURE){
+        if(keys == 0b100){
+            looper_state = RECORDING;
+            //start writing to buffer
+        }
+        if(keys == 0b100 && state == RECORDING){
+            //stop recording save the array length here 
+            looper_state = PLAY;
+        }
+        if(looper_state == PLAY){
+            if(keys == 0b10){
+                looper_state == PAUSED;
+                //pause it
+            }
+            if(keys == 0b1){
+                looper_state == CLEAR;
+                //clear it
+            }
+            if(keys = 0b100){
+                looper_state == OVERDUB;
+                //start recording new stuff and overwrite the buffer with the write ptr going back
+            }
+        }
+
+        if(keys == 0b100 && state == OVERDUB){
+            looper_state = PLAY;
+        }
+
     }
 
     
     //SIGNAL CHAIN
 
     if (AUDIO->rarc != 0 && AUDIO->ralc != 0) {
-      *LEFT = AUDIO->ldata;
-      *RIGHT = AUDIO->rdata;
+        *LEFT = AUDIO->ldata;
+        *RIGHT = AUDIO->rdata;
 
-      if((sw & 0b10)!=0) wah(LEFT, RIGHT, fx_strength[1]);
-      if ((sw & 0b100) != 0) distortion(LEFT, RIGHT,fx_strength[2]);
-      if((sw&0b1000) != 0) chorus(LEFT, RIGHT, fx_strength[3]);
-      if((sw&0b10000) != 0) vibrato(LEFT, RIGHT, fx_strength[4]);
-      if((sw&0b100000) != 0) echo(LEFT, RIGHT, fx_strength[5]);
-      if((sw&0b1000000) != 0) reverb(LEFT, RIGHT, fx_strength[6]);
-      if(sw == 1) mute(LEFT, RIGHT, 0);
-      
-      if(AUDIO->wsrc != 0 && AUDIO->wslc !=0){
-        AUDIO->ldata = *LEFT;
-        AUDIO->rdata = *RIGHT;
-      }
+        if((sw & 0b10)!=0) wah(LEFT, RIGHT, fx_strength[1]);
+        if ((sw & 0b100) != 0) distortion(LEFT, RIGHT,fx_strength[2]);
+        if((sw&0b1000) != 0) chorus(LEFT, RIGHT, fx_strength[3]);
+        if((sw&0b10000) != 0) vibrato(LEFT, RIGHT, fx_strength[4]);
+        if((sw&0b100000) != 0) echo(LEFT, RIGHT, fx_strength[5]);
+        if((sw&0b1000000) != 0) reverb(LEFT, RIGHT, fx_strength[6]);
+        if(sw == 1) mute(LEFT, RIGHT, 0);
+
+        //post processing chain loop pedal activities
+
+        //fsms here
+        if(looper_state == RECORDING){
+            //start write ptr at 0, start recording
+        }
+        else if(looper_state == PLAY){
+            //add the array output to the throughput 
+        }
+        else if(looper_state == PAUSE){
+            //stop playing, reset read ptr to 0 
+        }
+        else if(looper_state == CLEAR){
+            //GONE
+        }
+        else if(looper_state == OVERDUB){
+            //obtain the output
+            //overwrite the array at index 0
+        }
     }
   }
   return 0;

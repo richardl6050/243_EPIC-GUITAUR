@@ -268,8 +268,8 @@ const static int tanh_lut[256] = {
 
 
 
-// bitshift
-const float  drive_levels[10] = {
+// bitshift adjust these parameters for driving
+const float drive_levels[10] = {
     1.0f, 1.2f, 1.3f, 1.5f, 1.7f, 1.9f, 2.1f, 2.3f, 2.7f, 3.0f
 };
 
@@ -316,10 +316,10 @@ void distortion(int *L, int *R, int effectStrength) {
         return;
     }
     
-    long long scaled = abs_value * drive; //scaled signal
+    float scaled = abs_value * drive; //scaled signal
    
 
-    int index = scaled >> (23); //shift the bits 
+    int index = (int) scaled >> (23); //shift the bits 
     index = index & 0xFF; //only take the upper 8 bits
     signal = tanh_lut[index] >> 0; //indexed by upper 8 bits
     //sign extend
