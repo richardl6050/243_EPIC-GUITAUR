@@ -304,7 +304,7 @@ void distortion(int *L, int *R, int effectStrength) {
 
   */
 
-    int drive = drive_levels[effectStrength];
+    float drive = drive_levels[effectStrength];
 
     int signal = *L;
     //just use mono processing
@@ -320,9 +320,9 @@ void distortion(int *L, int *R, int effectStrength) {
     float scaled = abs_value * drive * 1.5f; //scaled signal
    
 
-    int index = (int) scaled >> (23); //shift the bits 
+    int index = (int) scaled >> (20); //shift the bits 
     index = index & 0xFF; //only take the upper 8 bits
-    signal = tanh_lut[index] << 0; //indexed by upper 8 bits
+    signal = tanh_lut[index] >> 2; //indexed by upper 8 bits
     //sign extend
     signal *= sign;
 

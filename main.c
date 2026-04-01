@@ -2,7 +2,7 @@
 #include "effects/effects.h"
 #include "setup/init.h"
 
-#define NUM_EFFECTS 7
+#define NUM_EFFECTS 8
 
 // function declarations
 
@@ -69,7 +69,7 @@ int main(void) {
 
     //UI STATE MACHINE
     if (state == PLAYBACK) {
-        *LEDS = sw & 0b1111111;
+        *LEDS = sw & 0b11111111;
         if (keys == 0b1000 && count_switches(sw) == 1) {  // if we want to configure an effect, press KEY3
             eff_2config = which_sw(sw);
             leds_show_strength(fx_strength[eff_2config]);
@@ -93,24 +93,24 @@ int main(void) {
     }
 
     //FSMSSSS
-        if((sw >> 7) != 0 && !activeLoop){
+        if((sw >> NUM_EFFECTS) != 0 && !activeLoop){
             looper_state = LOOP;
             activeLoop = 1;
         }
-        else if((sw >> 7) == 0 && activeLoop){
+        else if((sw >> NUM_EFFECTS) == 0 && activeLoop){
             activeLoop = 0;
             looper_state = IDLE;
         }
         if(looper_state == LOOP){
         //start recording
-            *LEDS = 0b10000000;
+            *LEDS = 0b100000000;
             if(keys == 0b100){
                 LOOP_WRITER = 0;
                 looper_state = RECORDING;
             }
         }
         else if(looper_state == RECORDING){
-            *LEDS = 0b100000000;
+            *LEDS = 0b1000000000;
             if(keys == 0b100 ){
                 //stop recording
                 LOOP_END = LOOP_WRITER;
@@ -119,7 +119,7 @@ int main(void) {
             }
         }
         else if(looper_state == PLAY){
-            *LEDS = 0b1000000000;
+            *LEDS = 0b100000000;
             if(keys == 0b10){
                 looper_state = PAUSED;
                 //pause it
@@ -135,7 +135,7 @@ int main(void) {
             }
         }
         else if(looper_state == OVERDUB){
-            *LEDS = 0b100000000;
+            *LEDS = 0b1000000000;
             if(keys == 0b100 || LOOP_WRITER >= LOOP_END){
                 looper_state = PLAY;
             }
@@ -166,9 +166,11 @@ int main(void) {
         if ((sw & 0b100) != 0) distortion(LEFT, RIGHT,fx_strength[2]);
         if((sw&0b1000) != 0) chorus(LEFT, RIGHT, fx_strength[3]);
         if((sw&0b10000) != 0) vibrato(LEFT, RIGHT, fx_strength[4]);
-        if((sw&0b100000) != 0) echo(LEFT, RIGHT, fx_strength[5]);
-        if((sw&0b1000000) != 0) reverb(LEFT, RIGHT, fx_strength[6]);
+        if((sw&0b100000) != 0) tremolo(LEFT, RIGHT, fx_strength[5]);
+        if((sw&0b1000000) != 0) echo(LEFT, RIGHT, fx_strength[5]);
+        if((sw&0b10000000) != 0) reverb(LEFT, RIGHT, fx_strength[6]);
         if(sw == 1) mute(LEFT, RIGHT, 0);
+        
 
         //post processing chain loop pedal activities
 
