@@ -297,10 +297,10 @@ void distortion(int *L, int *R, int effectStrength) {
 
   4. Take into account the sign of the signal
 
-  //note this will sound like shit due to undersampling, desired sampling freq
+  //note this will sound very poor due to undersampling, desired sampling freq
   is at least 48k ideally 96k
 
-  it kinda sounds bad
+  it kinda sounds like it has potential
 
   */
 
