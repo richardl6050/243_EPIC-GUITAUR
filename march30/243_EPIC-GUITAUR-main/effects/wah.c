@@ -53,7 +53,7 @@ static const float attack[10] = {
 
 //limit this to 10 dont want peaks too close
 static const float resonance[10] = {
-    2.0f, 2.5f, 2.75f, 2.85f, 2.90f, 2.95f, 3.0f
+    5.0f, 5.5f, 6.0f, 6.25f, 6.5f, 6.75f, 7.0f, 7.15f, 7.3f, 7.5f
 };
 static int nSamples = 0;
 

@@ -3,7 +3,7 @@ import numpy as np
 # Configuration
 LUT_SIZE = 256          # 8-bit index from upper bits of magnitude      # Magnitude bits (24-bit signed, sign excluded)
 INDEX_BITS = 8          # MSBs used for LUT index
-MAX_VAL = (1 << 31) - 1   # 0x7FFFFF
+MAX_VAL = (1 << 29) - 1   # 0x7FFFFF
 
 # The 8 MSBs of the 23-bit magnitude span 0..255.
 # Each index step = 2^15 in the original 23-bit fixed-point.
@@ -11,7 +11,7 @@ MAX_VAL = (1 << 31) - 1   # 0x7FFFFF
 # You need to decide: what input value does index 255 correspond to?
 # Here we map index 255 -> x=4.0 (tanh(4) ≈ 0.9993, effectively clipped).
 # Adjust DRIVE_MAX to taste.
-DRIVE_MAX = 4
+DRIVE_MAX = 5
 
 
 def generate_tanh_lut(size, drive_max, use_atan=False):

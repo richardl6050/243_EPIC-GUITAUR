@@ -60,6 +60,8 @@ int main(void) {
   State state = PLAYBACK;
   State looper_state = IDLE;
 
+  int activeLoop = 0;
+
   while (1) {
     // control polling
     int sw = *SW & 0x3FF;
@@ -67,46 +69,49 @@ int main(void) {
 
     //UI STATE MACHINE
     if (state == PLAYBACK) {
-        *LEDS = sw;
+        *LEDS = sw & 0b1111111;
         if (keys == 0b1000 && count_switches(sw) == 1) {  // if we want to configure an effect, press KEY3
             eff_2config = which_sw(sw);
             leds_show_strength(fx_strength[eff_2config]);
             state = CONFIGURE;
         }
-        if((sw & 0b1000000000) != 0){
-            looper_state = LOOP;
-        }
-        else if((sw & 0b1000000000) == 0){
-            looper_state = IDLE;
-        }
+     
 
     } else {  // state == CONFIGURE
         if (keys == 0b0010 && fx_strength[eff_2config] < 10) {  // KEY1 Increments
             fx_strength[eff_2config] += 1;
             leds_show_strength(fx_strength[eff_2config]);
-    } else if (keys == 1 &&
+        } else if (keys == 1 &&
                  fx_strength[eff_2config] > 0) {  // KEY0 decrements
                     fx_strength[eff_2config] -= 1;
         leds_show_strength(fx_strength[eff_2config]);
-      } else if (keys ==
+        } else if (keys ==
                  8) {  // KEY3 confirms configuration and exits to playback mode
-        eff_2config = -1;
-        state = PLAYBACK;
+            eff_2config = -1;
+            state = PLAYBACK;
+        }
     }
-}
 
-    
     //FSMSSSS
-    if(state != CONFIGURE){
+        if((sw >> 7) != 0 && !activeLoop){
+            looper_state = LOOP;
+            activeLoop = 1;
+        }
+        else if((sw >> 7) == 0 && activeLoop){
+            activeLoop = 0;
+            looper_state = IDLE;
+        }
         if(looper_state == LOOP){
         //start recording
+            *LEDS = 0b10000000;
             if(keys == 0b100){
                 LOOP_WRITER = 0;
                 looper_state = RECORDING;
             }
         }
         else if(looper_state == RECORDING){
-            if(keys == 0b100 || LOOP_WRITER >= LOOP_END){
+            *LEDS = 0b100000000;
+            if(keys == 0b100 ){
                 //stop recording
                 LOOP_END = LOOP_WRITER;
                 LOOP_READER = 0;
@@ -114,6 +119,7 @@ int main(void) {
             }
         }
         else if(looper_state == PLAY){
+            *LEDS = 0b1000000000;
             if(keys == 0b10){
                 looper_state = PAUSED;
                 //pause it
@@ -129,6 +135,7 @@ int main(void) {
             }
         }
         else if(looper_state == OVERDUB){
+            *LEDS = 0b100000000;
             if(keys == 0b100 || LOOP_WRITER >= LOOP_END){
                 looper_state = PLAY;
             }
@@ -141,7 +148,7 @@ int main(void) {
         else if(looper_state == CLEAR){
             looper_state = LOOP;
         }
-    }
+    
     
 
 
@@ -166,14 +173,14 @@ int main(void) {
         //post processing chain loop pedal activities
 
         //fsms here
-        if(looper_state == RECORDING){
-            LOOP_BUFFER[LOOP_WRITER] = *LEFT
+        if(looper_state == RECORDING){   
+            LOOP_BUFFER[LOOP_WRITER] = *LEFT;
             LOOP_WRITER++;
         }
         else if(looper_state == PLAY){
             //add the array output to the throughput 
             if(LOOP_READER <= LOOP_END){
-                *LEFT = (*LEFT >> 1) + (LOOP_BUFFER[LOOP_READER] >> 1)
+                *LEFT = (*LEFT >> 1) + (LOOP_BUFFER[LOOP_READER] >> 1);
                 LOOP_READER++;
             }
             else{
@@ -186,6 +193,7 @@ int main(void) {
         else if(looper_state == CLEAR){
             LOOP_READER = 0;
             LOOP_WRITER = 0;
+
             for(int i = 0 ; i < 4194304; i++){
                 LOOP_BUFFER[i] = 0;
             }
