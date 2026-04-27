@@ -17,14 +17,14 @@
 #define AP2_LEN 678   // ~14ms
 
 // comb filter buffers
-static int comb1_L[COMB1_LEN], comb1_R[COMB1_LEN];
-static int comb2_L[COMB2_LEN], comb2_R[COMB2_LEN];
-static int comb3_L[COMB3_LEN], comb3_R[COMB3_LEN];
-static int comb4_L[COMB4_LEN], comb4_R[COMB4_LEN];
+static int comb1_L[COMB1_LEN];
+static int comb2_L[COMB2_LEN];
+static int comb3_L[COMB3_LEN];
+static int comb4_L[COMB4_LEN];
 
 // Allpass buffers
-static int ap1_L[AP1_LEN], ap1_R[AP1_LEN];
-static int ap2_L[AP2_LEN], ap2_R[AP2_LEN];
+static int ap1_L[AP1_LEN];
+static int ap2_L[AP2_LEN];
 
 // Heads for each buffer
 static int c1 = 0, c2 = 0, c3 = 0, c4 = 0, a1 = 0, a2 = 0;
@@ -66,23 +66,26 @@ void reverb(int* L, int* R, int strength) {
               comb(comb3_L, &c3, COMB3_LEN, *L, feedback_shift) +
               comb(comb4_L, &c4, COMB4_LEN, *L, feedback_shift);
 
-  int wet_R = comb(comb1_R, &c1, COMB1_LEN, *R, feedback_shift) +
-              comb(comb2_R, &c2, COMB2_LEN, *R, feedback_shift) +
-              comb(comb3_R, &c3, COMB3_LEN, *R, feedback_shift) +
-              comb(comb4_R, &c4, COMB4_LEN, *R, feedback_shift);
+ 
+  // int wet_R = comb(comb1_R, &c1, COMB1_LEN, *R, feedback_shift) +
+  //             comb(comb2_R, &c2, COMB2_LEN, *R, feedback_shift) +
+  //             comb(comb3_R, &c3, COMB3_LEN, *R, feedback_shift) +
+  //             comb(comb4_R, &c4, COMB4_LEN, *R, feedback_shift);
+
+
 
   // Run through 2 allpass filters in series to diffuse the sound
   wet_L = allpass(ap1_L, &a1, AP1_LEN, wet_L);
   wet_L = allpass(ap2_L, &a2, AP2_LEN, wet_L);
 
-  wet_R = allpass(ap1_R, &a1, AP1_LEN, wet_R);
-  wet_R = allpass(ap2_R, &a2, AP2_LEN, wet_R);
+  // wet_R = allpass(ap1_R, &a1, AP1_LEN, wet_R);
+  // wet_R = allpass(ap2_R, &a2, AP2_LEN, wet_R);
 
   // Blend wet and dry based on strength
   // strength 1: mostly dry, strength 10: equal mix
-  int wet_mix = strength;                 // 1–10
-  int dry_mix = MAX_STRENGTH - strength;  // 9–0
+  int wet_mix = strength-2;                 // 1–10
+  int dry_mix = MAX_STRENGTH - strength+2;  // 9–0
 
   *L = (*L * dry_mix + wet_L * wet_mix) / MAX_STRENGTH;
-  *R = (*R * dry_mix + wet_R * wet_mix) / MAX_STRENGTH;
+  *R = *L;
 }
