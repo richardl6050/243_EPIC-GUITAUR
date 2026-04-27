@@ -1,5 +1,4 @@
 // unlike vibrato, wobbles/pulses volume instead of pitch.
-
 // strength 1 -> 1Hz pulse
 //          10 -> 1-Hz pulse
 
